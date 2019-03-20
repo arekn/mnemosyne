@@ -1,45 +1,43 @@
-package pkg
+package memory
 
 import (
 	"bufio"
-	"fmt"
+	"io"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 )
 
-func parseMemInfoFile(fileLocation string) {
+type MemInfo map[string]int
 
-	file, e := os.Open(fileLocation)
+func ParseMemInfo(memInfoSource io.Reader) (MemInfo, error) {
 
-	if e != nil {
-		log.Fatal(e)
-	}
-	defer file.Close()
+	scanner := bufio.NewScanner(memInfoSource)
 
-	scanner := bufio.NewScanner(file)
-
-	mem := make(map[string]int)
+	result := make(MemInfo)
 
 	for scanner.Scan() {
 
-		if err := scanner.Err(); err != nil {
-			fmt.Println(err)
+		if scannerError := scanner.Err(); scannerError != nil {
+			log.Println("memInfoSource scanner error")
+			return nil, scannerError
 		}
 		line := scanner.Text()
 
 		fields := strings.Fields(line)
 
+		if len(fields) < 2 {
+
+		}
 		key := strings.TrimSuffix(fields[0], ":")
 		value, conversionError := strconv.Atoi(fields[1])
 
 		if conversionError != nil {
-			fmt.Println(conversionError)
+			log.Printf("converting value: %v", fields[1])
+			return nil, conversionError
 		}
 
-		mem[key] = value
+		result[key] = value
 	}
+	return result, nil
 }
-
-// https://matthias-endler.de/2018/go-io-testing/
