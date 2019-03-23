@@ -3,20 +3,30 @@
 package main
 
 import (
-	"github.com/arekn/mnemosyne/internal/pkg"
+	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
 )
 
 const memInfoPath = "/proc/meminfo"
 
 func main() {
-	memInfoFile, openFileError := os.Open(memInfoPath)
 
-	defer memInfoFile.Close()
-	if openFileError != nil {
-		log.Fatal(openFileError)
+	files, err := ioutil.ReadDir("/proc")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	memory.ParseMemInfo(memInfoFile)
+	for _, f := range files {
+		fmt.Printf("%v + %v \n", f.Name(), f.IsDir())
+	}
+
+	//memInfoFile, openFileError := os.Open(memInfoPath)
+	//
+	//defer memInfoFile.Close()
+	//if openFileError != nil {
+	//	log.Fatal(openFileError)
+	//}
+	//
+	//procfs.ParseProcFile(memInfoFile)
 }
