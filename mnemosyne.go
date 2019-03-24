@@ -1,6 +1,6 @@
 // +build linux
 
-package mnemosyne
+package main
 
 import (
 	"encoding/csv"
@@ -33,7 +33,7 @@ func main() {
 		select {
 		case <-gracefulStop:
 			{
-				log.Println("Stopping application")
+				log.Println("stopping application")
 				os.Exit(0)
 			}
 		case <-oneMinuteTicker.C:
