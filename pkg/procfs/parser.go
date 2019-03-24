@@ -10,13 +10,11 @@ import (
 
 const keyValueSeparator = ":"
 
-type ProcFile map[string]string
-
-func ParseProcFile(source io.Reader) (ProcFile, error) {
+func ParseProcFile(source io.Reader) (map[string]string, error) {
 
 	scanner := bufio.NewScanner(source)
 
-	result := make(ProcFile)
+	result := make(map[string]string)
 
 	for scanner.Scan() {
 
