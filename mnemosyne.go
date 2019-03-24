@@ -22,16 +22,16 @@ const fileEntryTimestamp = "15:04:05"
 
 func main() {
 
-	gracefulStop := make(chan os.Signal)
-	signal.Notify(gracefulStop, syscall.SIGTERM)
-	signal.Notify(gracefulStop, syscall.SIGINT)
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGTERM)
+	signal.Notify(stop, syscall.SIGINT)
 
 	oneMinuteTicker := time.NewTicker(1 * time.Minute)
 	defer oneMinuteTicker.Stop()
 
 	for {
 		select {
-		case <-gracefulStop:
+		case <-stop:
 			{
 				log.Println("stopping application")
 				os.Exit(0)
@@ -65,7 +65,7 @@ func checkMemory() {
 	if closeError != nil {
 		log.Fatal(closeError)
 	}
-	log.Printf("memory total: %v, memory used: %v/n", memTotal, memUsed)
+	log.Printf("memory total: %v, memory used: %v", memTotal, memUsed)
 }
 
 func checkMemoryState() (total int, used int) {
