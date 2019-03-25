@@ -15,12 +15,15 @@ import (
 	"time"
 )
 
+const outputFolder = "output"
 const procPath = "/proc"
 const memInfoFile = "meminfo"
 const fileNameTimestamp = "2006.01.02"
-const fileEntryTimestamp = "15:04:05"
+const fileEntryTimestamp = "15:04"
 
 func main() {
+
+	createOutputFolder()
 
 	stop := make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGTERM)
@@ -38,20 +41,26 @@ func main() {
 			}
 		case <-oneMinuteTicker.C:
 			{
-				checkMemory()
+				measureMemoryUsage()
 			}
-
 		}
-
 	}
 }
 
-func checkMemory() {
+func createOutputFolder() {
+	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
+		log.Println("creating output folder")
+		os.Mkdir(outputFolder, os.ModePerm)
+	}
+}
+
+func measureMemoryUsage() {
 	memTotal, memUsed := checkMemoryState()
 
 	timestamp := time.Now()
 	filename := fmt.Sprintf("meminfo-%v.csv", timestamp.Format(fileNameTimestamp))
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	filePath := path.Join(outputFolder, filename)
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +74,6 @@ func checkMemory() {
 	if closeError != nil {
 		log.Fatal(closeError)
 	}
-	log.Printf("memory total: %v, memory used: %v", memTotal, memUsed)
 }
 
 func checkMemoryState() (total int, used int) {
