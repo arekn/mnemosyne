@@ -5,7 +5,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/arekn/mnemosyne/pkg/procfs"
+	"github.com/arekn/mnemosyne/procfs"
 	"log"
 	"os"
 	"os/signal"
@@ -25,9 +25,7 @@ func main() {
 
 	createOutputFolder()
 
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGTERM)
-	signal.Notify(stop, syscall.SIGINT)
+	stop := initStopChannel()
 
 	oneMinuteTicker := time.NewTicker(1 * time.Minute)
 	defer oneMinuteTicker.Stop()
@@ -47,6 +45,13 @@ func main() {
 	}
 }
 
+func initStopChannel() chan os.Signal {
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGTERM)
+	signal.Notify(stop, syscall.SIGINT)
+	return stop
+}
+
 func createOutputFolder() {
 	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
 		log.Println("creating output folder")
@@ -55,52 +60,58 @@ func createOutputFolder() {
 }
 
 func measureMemoryUsage() {
-	memTotal, memUsed := checkMemoryState()
+	memTotal, memUsed := measureAllMemory()
 
 	timestamp := time.Now()
 	filename := fmt.Sprintf("meminfo-%v.csv", timestamp.Format(fileNameTimestamp))
 	filePath := path.Join(outputFolder, filename)
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	dataFile, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer closeDataFile(dataFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
-	w := csv.NewWriter(f)
-	writeError := w.Write([]string{timestamp.Format(fileEntryTimestamp), strconv.Itoa(memUsed), strconv.Itoa(memTotal)})
+	csvWriter := csv.NewWriter(dataFile)
+	writeError := csvWriter.Write([]string{timestamp.Format(fileEntryTimestamp), strconv.Itoa(memUsed), strconv.Itoa(memTotal)})
 	if writeError != nil {
-		log.Fatal(writeError)
+		log.Println(writeError)
+		return
 	}
-	w.Flush()
-	closeError := f.Close()
+	csvWriter.Flush()
+}
+
+func closeDataFile(dataFile *os.File) {
+	closeError := dataFile.Close()
 	if closeError != nil {
-		log.Fatal(closeError)
+		log.Println(closeError)
 	}
 }
 
-func checkMemoryState() (total int, used int) {
+func measureAllMemory() (total int, used int) {
 	memInfo := procfs.MemInfoFile(parseFile(path.Join(procPath, memInfoFile)))
 
 	memFree, memFreeError := memInfo.MemFree()
 	if memFreeError != nil {
-		log.Fatal(memFreeError)
+		log.Println(memFreeError)
 	}
 	memTotal, memTotalError := memInfo.MemTotal()
 	if memTotalError != nil {
-		log.Fatal(memTotalError)
+		log.Println(memTotalError)
 	}
 
 	usedMemory := memTotal - memFree
 	return memTotal, usedMemory
 }
 
-func parseFile(path string) map[string]string {
+func parseFile(path string) procfs.MemInfoFile {
 	file, openFileError := os.Open(path)
+	defer file.Close()
 
 	if openFileError != nil {
 		log.Fatal(openFileError)
 	}
 
 	procFile, parseError := procfs.ParseProcFile(file)
-	file.Close()
 	if parseError != nil {
 		log.Fatal(parseError)
 	}

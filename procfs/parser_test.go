@@ -1,6 +1,7 @@
 package procfs
 
 import (
+	"github.com/arekn/mnemosyne"
 	"strings"
 	"testing"
 )
@@ -12,7 +13,7 @@ Groups:	4 24 27 30 46 118 128 999 1000
 VmSize:	    8828 kB
 `
 	// when
-	result, e := ParseProcFile(strings.NewReader(validFile))
+	result, e := main.ParseProcFile(strings.NewReader(validFile))
 
 	// then
 	if len(result) != 3 {
@@ -30,7 +31,7 @@ func TestParseMemInfo_should_returnProperKeyValuePair(t *testing.T) {
 	const testFile = expectedKey + ":" + expectedValue
 
 	// when
-	result, e := ParseProcFile(strings.NewReader(testFile))
+	result, e := main.ParseProcFile(strings.NewReader(testFile))
 
 	// then
 	if result[expectedKey] != expectedValue {
@@ -46,7 +47,7 @@ func TestParseMemInfo_should_returnErrorWhenSeparatorIsMissing(t *testing.T) {
 	const testFile = "some test file"
 
 	// when
-	result, e := ParseProcFile(strings.NewReader(testFile))
+	result, e := main.ParseProcFile(strings.NewReader(testFile))
 
 	// then
 	if result != nil {
